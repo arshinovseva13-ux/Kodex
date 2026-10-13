@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Kodex</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#12151c;--panel:#171b24;--line:#262c39;--tx:#c9d1e0;--dim:#7d889e;--ac:#6cb6ff;--sel:#1f2736;--r:6px}
+*{box-sizing:border-box}html,body{height:100%;margin:0;background:var(--bg);color:var(--tx);font:13px 'IBM Plex Sans',system-ui,sans-serif}
+#app{display:grid;grid-template-columns:48px 260px 1fr;grid-template-rows:1fr 24px;height:100%}
+#rail{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding-top:8px;gap:4px}
+#rail button{width:36px;height:36px;border:0;background:none;color:var(--dim);border-radius:var(--r);font-size:16px;cursor:pointer}
+#rail button.on,#rail button:hover{color:var(--tx);background:var(--sel)}
+#side{background:var(--panel);border-right:1px solid var(--line);overflow:auto;min-width:0}
+#side h4{margin:0;padding:10px 12px;font-weight:600;color:var(--dim);font-size:12px;display:flex;justify-content:space-between}
+.row{padding:3px 8px;cursor:pointer;white-space:nowrap;display:flex;gap:6px;font-size:13px}
+.row:hover{background:var(--sel)}.row.on{background:var(--sel);color:#fff;box-shadow:inset 2px 0 var(--ac)}
+.kids{margin-left:12px;border-left:1px solid var(--line)}
+#main{display:flex;flex-direction:column;min-width:0}
+#tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto;min-height:35px}
+.tab{display:flex;align-items:center;gap:8px;padding:0 12px;color:var(--dim);cursor:pointer;border-right:1px solid var(--line);white-space:nowrap}
+.tab.on{color:#fff;background:var(--bg);box-shadow:inset 0 -2px var(--ac)}.tab b{font-weight:400;opacity:.6}.tab b:hover{opacity:1;color:var(--ac)}
+#ed{flex:1;min-height:0}
+#empty{margin:auto;color:var(--dim);line-height:2;font-family:'IBM Plex Mono',monospace}#empty kbd{color:var(--ac)}
+#status{grid-column:1/-1;background:var(--ac);color:#06121f;display:flex;gap:16px;padding:0 12px;align-items:center;font-size:12px;font-weight:500}
+#status span:first-child{margin-right:auto}
+button.p{background:var(--ac);color:#06121f;border:0;border-radius:var(--r);padding:7px 12px;margin:8px 12px;font:600 12px inherit;cursor:pointer}
+input.s{width:calc(100% - 24px);margin:0 12px 8px;background:var(--bg);border:1px solid var(--line);color:var(--tx);padding:6px 8px;border-radius:var(--r);font:12px 'IBM Plex Mono',monospace}
+#pal{position:fixed;inset:0;display:none;align-items:flex-start;justify-content:center;padding-top:12vh;background:#0006;z-index:9}
+#pal div{width:min(560px,92vw);background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+#pal input{width:100%;padding:12px 14px;background:none;border:0;border-bottom:1px solid var(--line);color:#fff;font:14px 'IBM Plex Mono',monospace;outline:0}
+#pal ul{list-style:none;margin:0;padding:4px;max-height:50vh;overflow:auto}#pal li{padding:6px 10px;border-radius:4px;cursor:pointer;display:flex;justify-content:space-between}
+#pal li.on{background:var(--sel);color:#fff}#pal small{color:var(--dim)}
+.hit{color:var(--dim);font:12px 'IBM Plex Mono',monospace;padding:2px 12px 2px 20px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hit:hover{background:var(--sel)}
+#ctx{position:fixed;display:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px;z-index:8;min-width:160px}#ctx div{padding:5px 10px;border-radius:4px;cursor:pointer}#ctx div:hover{background:var(--sel)}
+#term{display:none;height:220px;border-top:1px solid var(--line);background:var(--panel);flex-direction:column;font:12px 'IBM Plex Mono',monospace}
+#tout{flex:1;margin:0;padding:8px 12px;overflow:auto;white-space:pre-wrap}
+#tin{background:none;border:0;border-top:1px solid var(--line);color:#fff;padding:8px 12px;font:inherit;outline:0}
+:focus-visible{outline:2px solid var(--ac);outline-offset:-2px}
+@media(max-width:700px){#app{grid-template-columns:44px 0 1fr}#side{display:none}}
+</style></head><body>
+<div id="app">
+ <nav id="rail"><button id="b-files" class="on" title="Explorer">▤</button><button id="b-search" title="Search (Ctrl+Shift+F)">⌕</button><button id="b-cmd" title="Commands (Ctrl+Shift+P)">❯</button><button id="b-term" title="Terminal (Ctrl+`)">▭</button></nav>
+ <aside id="side"></aside>
+ <section id="main"><div id="tabs"></div><div id="ed"></div>
+  <div id="empty"><div><kbd>Ctrl+O</kbd> open folder<br><kbd>Ctrl+P</kbd> go to file<br><kbd>Ctrl+Shift+P</kbd> commands<br><kbd>Ctrl+S</kbd> save<br><kbd>Ctrl+`</kbd> terminal</div></div><div id="term"><pre id="tout"></pre><input id="tin" placeholder="$ command, Enter to run, Ctrl+C to stop"></div></section>
+ <footer id="status"><span id="st-f">Kodex</span><span id="st-p">Ln 1, Col 1</span><span id="st-l">Plain Text</span><span id="st-e">UTF-8</span></footer>
+</div>
+<div id="ctx"></div><div id="pal"><div><input id="pi" placeholder=""><ul id="pl"></ul></div></div>
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
+<script>
+const $=s=>document.querySelector(s),B='https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min';
+const SKIP=new Set(['node_modules','.git','dist','build','.next','__pycache__','.venv','target']);
+let root=null,editor,monaco,files=new Map(),order=[],active=null,index=[],opts=Object.assign({minimap:true,theme:'kodex',wrap:'off',auto:false,font:13},JSON.parse(localStorage.getItem('kodex.opts')||'{}'));
+window.MonacoEnvironment={getWorkerUrl:()=>'data:text/javascript;charset=utf-8,'+encodeURIComponent(`self.MonacoEnvironment={baseUrl:'${B}/'};importScripts('${B}/vs/base/worker/workerMain.js');`)};
+require.config({paths:{vs:B+'/vs'}});
+require(['vs/editor/editor.main'],m=>{monaco=m;
+ monaco.editor.defineTheme('kodex',{base:'vs-dark',inherit:true,rules:[],colors:{'editor.background':'#12151c','editor.lineHighlightBackground':'#1a202b','editorLineNumber.foreground':'#4a5368','editorCursor.foreground':'#6cb6ff'}});
+ editor=monaco.editor.create($('#ed'),{theme:opts.theme,wordWrap:opts.wrap,model:null,automaticLayout:true,fontFamily:"'IBM Plex Mono',monospace",fontSize:opts.font,fontLigatures:true,minimap:{enabled:opts.minimap},bracketPairColorization:{enabled:true},smoothScrolling:true,cursorSmoothCaretAnimation:'on',padding:{top:10},scrollBeyondLastLine:false,renderWhitespace:'selection',guides:{indentation:true}});
+ editor.onDidChangeCursorPosition(e=>$('#st-p').textContent=`Ln ${e.position.lineNumber}, Col ${e.position.column}`);
+ editor.addCommand(monaco.KeyMod.CtrlCmd|monaco.KeyCode.KeyS,save);
+ editor.onDidChangeModelContent(autosave);restore();
+ showExplorer();
+});
+const lang=n=>{const x='.'+n.split('.').pop().toLowerCase();const l=monaco.languages.getLanguages().find(l=>(l.extensions||[]).includes(x));return l?l.id:'plaintext'};
+async function pickRoot(){
+ if(!window.showDirectoryPicker)return alert('Folder access needs a Chromium-based browser (Chrome, Edge, Arc) or the Electron build.');
+ try{root=await showDirectoryPicker({mode:'readwrite'})}catch{return}idbSet(root);
+ index=[];await walk(root,'');showExplorer();status('Opened '+root.name+' ('+index.length+' files)');
+}
+async function walk(dir,p){for await(const[n,h]of dir.entries()){if(SKIP.has(n)||index.length>8000)continue;const q=p+n;if(h.kind==='directory')await walk(h,q+'/');else index.push({path:q,handle:h})}}
+async function showExplorer(){
+ const s=$('#side');s.innerHTML='';
+ if(!root){s.innerHTML='<h4>EXPLORER</h4><button class="p" id="op">Open folder</button>';$('#op').onclick=pickRoot;return}
+ s.innerHTML=`<h4>${root.name}</h4>`;s.firstChild.oncontextmenu=e=>{e.preventDefault();ctx(e,root,root.name,root,'')};const box=document.createElement('div');s.append(box);await tree(root,box,'');
+}
+async function tree(dir,el,p){
+ const ents=[];for await(const e of dir.entries())ents.push(e);
+ ents.sort((a,b)=>(a[1].kind==='file')-(b[1].kind==='file')||a[0].localeCompare(b[0]));
+ for(const[n,h]of ents){if(n==='.git')continue;const r=document.createElement('div');r.className='row';const path=p+n;r.dataset.path=path;r.oncontextmenu=e=>{e.preventDefault();ctx(e,dir,n,h,path)};
+  if(h.kind==='directory'){r.textContent='▸ '+n;const k=document.createElement('div');k.className='kids';k.hidden=true;let ld=false;
+   r.onclick=async()=>{k.hidden=!k.hidden;r.textContent=(k.hidden?'▸ ':'▾ ')+n;if(!ld){ld=true;await tree(h,k,path+'/')}};el.append(r,k)}
+  else{r.textContent='· '+n;r.onclick=()=>openFile(path,h);el.append(r)}}
+}
+async function openFile(path,handle){
+ if(!files.has(path)){const f=await handle.getFile();if(f.size>5e6)return status('File too large (>5 MB)');
+  const t=await f.text();const model=monaco.editor.createModel(t,lang(path),monaco.Uri.file('/'+path));
+  const o={path,handle,model,dirty:false,saved:t};model.onDidChangeContent(()=>{o.dirty=model.getValue()!==o.saved;tabs()});files.set(path,o);order.push(path)}
+ activate(path);
+}
+function activate(path){active=path;const o=files.get(path);editor.setModel(o.model);$('#empty').style.display='none';$('#ed').style.display='block';
+ $('#st-l').textContent=o.model.getLanguageId();$('#st-f').textContent=path;
+ document.querySelectorAll('.row').forEach(r=>r.classList.toggle('on',r.dataset.path===path));tabs();editor.focus()}
+function tabs(){const t=$('#tabs');t.innerHTML='';order.forEach(p=>{const o=files.get(p),d=document.createElement('div');d.className='tab'+(p===active?' on':'');
+ d.innerHTML=`<span>${p.split('/').pop()}${o.dirty?' ●':''}</span><b title="Close">✕</b>`;d.onclick=()=>activate(p);d.querySelector('b').onclick=e=>{e.stopPropagation();close(p)};t.append(d)})}
+function close(p){const o=files.get(p);if(o.dirty&&!confirm(p+' has unsaved changes. Close anyway?'))return;o.model.dispose();files.delete(p);order=order.filter(x=>x!==p);
+ if(active===p){active=null;if(order.length)activate(order.at(-1));else{editor.setModel(null);$('#empty').style.display='flex';$('#st-f').textContent='Kodex'}}tabs()}
+async function save(){const o=files.get(active);if(!o)return;try{const w=await o.handle.createWritable();await w.write(o.model.getValue());await w.close();o.saved=o.model.getValue();o.dirty=false;tabs();status('Saved '+active)}catch(e){status('Save failed: '+e.message)}}
+const status=t=>{$('#st-f').textContent=t;setTimeout(()=>$('#st-f').textContent=active||'Kodex',2500)};
+async function showSearch(){
+ const s=$('#side');s.innerHTML='<h4>SEARCH</h4><input class="s" id="q" placeholder="Find in files (Enter)"><input class="s" id="rp" placeholder="Replace with"><button class="p" id="ra" style="margin-top:0">Replace all</button><div id="res"></div>';const q=$('#q');q.focus();$('#ra').onclick=()=>replaceAll(q.value,$('#rp').value);
+ q.onkeydown=async e=>{if(e.key!=='Enter'||!q.value)return;const out=$('#res');out.textContent='Searching…';let n=0;out.innerHTML='';
+  for(const f of index){const file=await f.handle.getFile();if(file.size>1e6)continue;const lines=(await file.text()).split('\n');
+   for(let i=0;i<lines.length&&n<300;i++)if(lines[i].toLowerCase().includes(q.value.toLowerCase())){n++;const h=document.createElement('div');h.className='hit';h.textContent=`${f.path}:${i+1}  ${lines[i].trim()}`;
+    h.onclick=async()=>{await openFile(f.path,f.handle);editor.revealLineInCenter(i+1);editor.setPosition({lineNumber:i+1,column:1})};out.append(h)}}
+  if(!n)out.textContent='No results.'}}
+const setOpt=(k,v)=>{opts[k]=v;localStorage.setItem('kodex.opts',JSON.stringify(opts))};
+let at;const autosave=()=>{if(!opts.auto)return;clearTimeout(at);at=setTimeout(save,800)};
+async function saveAll(){const cur=active;for(const p of order)if(files.get(p).dirty){active=p;await save()}active=cur}
+const refresh=async()=>{index=[];await walk(root,'');await showExplorer()};
+addEventListener('click',()=>$('#ctx').style.display='none');
+function ctx(e,dir,n,h,path){const m=$('#ctx'),isD=h.kind==='directory',base=isD?h:dir;
+ const acts=[['New file',async()=>{const x=prompt('File name');if(!x)return;await base.getFileHandle(x,{create:true});await refresh()}],
+ ['New folder',async()=>{const x=prompt('Folder name');if(!x)return;await base.getDirectoryHandle(x,{create:true});await refresh()}]];
+ if(!isD)acts.push(['Rename',async()=>{const x=prompt('New name',n);if(!x||x===n)return;const t=await(await h.getFile()).text(),nh=await dir.getFileHandle(x,{create:true}),w=await nh.createWritable();await w.write(t);await w.close();await dir.removeEntry(n);if(files.has(path)){files.get(path).dirty=false;close(path)}await refresh()}]);
+ if(path!=='')acts.push(['Delete',async()=>{if(!confirm('Delete '+n+'?'))return;await dir.removeEntry(n,{recursive:true});if(files.has(path)){files.get(path).dirty=false;close(path)}await refresh()}]);
+ m.innerHTML='';acts.forEach(([t,f])=>{const d=document.createElement('div');d.textContent=t;d.onclick=()=>{m.style.display='none';f().catch(x=>status(x.message))};m.append(d)});m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';m.style.display='block'}
+async function replaceAll(f,r){if(!f||!root)return;const re=new RegExp(f.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');let n=0,hit=[];
+ for(const x of index){const file=await x.handle.getFile();if(file.size>1e6)continue;const t=await file.text(),c=(t.match(re)||[]).length;if(c){n+=c;hit.push([x,t])}}
+ if(!n)return status('No matches');if(!confirm(`Replace ${n} matches in ${hit.length} files? This writes to disk.`))return;
+ for(const[x,t]of hit){const nt=t.replace(re,()=>r),w=await x.handle.createWritable();await w.write(nt);await w.close();const o=files.get(x.path);if(o){o.model.setValue(nt);o.saved=nt;o.dirty=false}}tabs();status(`Replaced ${n} matches`)}
+function diffSaved(){const o=files.get(active);if(!o)return;const d=document.createElement('div');d.style.cssText='position:fixed;inset:6vh 6vw;z-index:9;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px;box-shadow:0 20px 60px #000a';
+ d.innerHTML='<div style="padding:4px 8px;color:var(--dim)">Saved on the left, current on the right. Esc to close.</div><div style="height:calc(100% - 28px)"></div>';document.body.append(d);
+ const de=monaco.editor.createDiffEditor(d.lastChild,{theme:opts.theme,automaticLayout:true,fontFamily:"'IBM Plex Mono',monospace",fontSize:opts.font}),a=monaco.editor.createModel(o.saved,o.model.getLanguageId());de.setModel({original:a,modified:o.model});
+ const off=e=>{if(e.key==='Escape'){removeEventListener('keydown',off,true);de.setModel(null);de.dispose();a.dispose();d.remove();editor.focus()}};addEventListener('keydown',off,true)}
+const idb=()=>new Promise((ok,no)=>{const r=indexedDB.open('kodex',1);r.onupgradeneeded=()=>r.result.createObjectStore('k');r.onsuccess=()=>ok(r.result);r.onerror=no});
+const idbSet=async v=>{try{(await idb()).transaction('k','readwrite').objectStore('k').put(v,'root')}catch{}};
+async function restore(){try{const d=await idb(),h=await new Promise(ok=>{const q=d.transaction('k').objectStore('k').get('root');q.onsuccess=()=>ok(q.result)});if(!h||root)return;
+ $('#side').innerHTML=`<h4>EXPLORER</h4><button class="p" id="rs">Reopen ${h.name}</button><button class="p" id="op" style="background:var(--sel);color:var(--tx);margin-top:0">Open other folder</button>`;
+ $('#rs').onclick=async()=>{if(await h.requestPermission({mode:'readwrite'})!=='granted')return;root=h;await refresh()};$('#op').onclick=pickRoot}catch{}}
+const T=window.kodexTerm;
+function toggleTerm(){const t=$('#term'),on=t.style.display!=='flex';t.style.display=on?'flex':'none';if(on){if(!T)$('#tout').textContent='The terminal runs in the desktop build (npm install && npm start).\n';$('#tin').focus()}}
+if(T)T.on(d=>{const o=$('#tout');o.textContent+=d;o.scrollTop=o.scrollHeight});
+$('#tin').onkeydown=e=>{if(!T)return;if(e.key==='Enter'&&e.target.value){$('#tout').textContent+='$ '+e.target.value+'\n';T.run(e.target.value);e.target.value=''}else if(e.key==='c'&&e.ctrlKey)T.kill()};
+const cmds=[
+ ['Open folder','Ctrl+O',pickRoot],['Save file','Ctrl+S',save],['Close tab','',()=>active&&close(active)],
+ ['Find in files','Ctrl+Shift+F',showSearch],['Show explorer','',showExplorer],
+ ['Toggle minimap','',()=>{setOpt('minimap',!opts.minimap);editor.updateOptions({minimap:{enabled:opts.minimap}})}],
+ ['Toggle word wrap','',()=>{setOpt('wrap',opts.wrap==='off'?'on':'off');editor.updateOptions({wordWrap:opts.wrap})}],
+ ['Toggle theme (dark/light)','',()=>{setOpt('theme',opts.theme==='vs'?'kodex':'vs');monaco.editor.setTheme(opts.theme)}],
+ ['Format document','Shift+Alt+F',()=>editor.getAction('editor.action.formatDocument').run()],
+ ['Change font size +','',()=>{setOpt('font',opts.font+1);editor.updateOptions({fontSize:opts.font})}],
+ ['Change font size −','',()=>{setOpt('font',opts.font-1);editor.updateOptions({fontSize:opts.font})}],
+ ['Save all','',saveAll],['Toggle auto save','',()=>{setOpt('auto',!opts.auto);status('Auto save '+(opts.auto?'on':'off'))}],
+ ['Compare with saved version','',diffSaved],['Toggle terminal','Ctrl+`',toggleTerm],
+ ['Go to symbol','Ctrl+Shift+O',()=>editor.getAction('editor.action.quickOutline').run()],
+ ['Go to line','Ctrl+G',()=>editor.getAction('editor.action.gotoLine').run()],
+ ['Find and replace','Ctrl+H',()=>editor.getAction('editor.action.startFindReplace').run()],
+ ['Fold all','',()=>editor.getAction('editor.foldAll').run()],['Unfold all','',()=>editor.getAction('editor.unfoldAll').run()],
+ ['Close all tabs','',()=>[...order].forEach(close)]];
+let items=[],sel=0;
+function palette(mode){const P=$('#pal'),i=$('#pi');P.style.display='flex';i.value='';i.placeholder=mode==='cmd'?'Type a command…':'Go to file…';i.focus();
+ const src=()=>mode==='cmd'?cmds.map(c=>({t:c[0],s:c[1],run:c[2]})):index.map(f=>({t:f.path,s:'',run:()=>openFile(f.path,f.handle)}));
+ const all=src(),draw=()=>{const v=i.value.toLowerCase();items=all.filter(x=>[...v].every((c,k)=>x.t.toLowerCase().includes(c))&&x.t.toLowerCase().includes(v.split(' ')[0])).slice(0,50);sel=0;paint()};
+ const paint=()=>{$('#pl').innerHTML='';items.forEach((x,k)=>{const l=document.createElement('li');l.className=k===sel?'on':'';l.innerHTML=`<span>${x.t}</span><small>${x.s}</small>`;l.onclick=()=>run(x);$('#pl').append(l)})};
+ const run=x=>{P.style.display='none';x.run()};
+ i.oninput=draw;i.onkeydown=e=>{if(e.key==='Escape'){P.style.display='none';editor.focus()}else if(e.key==='ArrowDown'){sel=Math.min(sel+1,items.length-1);paint()}else if(e.key==='ArrowUp'){sel=Math.max(sel-1,0);paint()}else if(e.key==='Enter'&&items[sel])run(items[sel])};draw()}
+addEventListener('keydown',e=>{const c=e.ctrlKey||e.metaKey,k=e.key.toLowerCase();
+ if(c&&e.shiftKey&&k==='p'){e.preventDefault();palette('cmd')}else if(c&&e.shiftKey&&k==='f'){e.preventDefault();showSearch()}
+ else if(c&&k==='p'){e.preventDefault();palette('file')}else if(c&&k==='o'){e.preventDefault();pickRoot()}else if(c&&k==='s'){e.preventDefault();save()}else if(c&&k==='`'){e.preventDefault();toggleTerm()}});
+$('#b-files').onclick=showExplorer;$('#b-search').onclick=showSearch;$('#b-cmd').onclick=()=>palette('cmd');$('#b-term').onclick=toggleTerm;
+$('#ed').style.display='none';
+addEventListener('beforeunload',e=>{if([...files.values()].some(f=>f.dirty))e.preventDefault()});
+</script></body></html>

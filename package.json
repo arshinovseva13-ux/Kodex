@@ -1,0 +1,9 @@
+{
+  "name": "kodex",
+  "version": "0.1.0",
+  "description": "Fast, minimal code editor powered by Monaco. Runs in the browser or as an Electron app.",
+  "main": "main.js",
+  "scripts": { "start": "electron .", "serve": "npx serve ." },
+  "license": "MIT",
+  "devDependencies": { "electron": "^33.0.0" }
+}
